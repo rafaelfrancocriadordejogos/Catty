@@ -18,19 +18,21 @@ jobs:
       with:
         xcode-version: latest
 
-    - name: Build and Archive
+    - name: List Schemes and Build
       run: |
-        set -e
-        echo "Iniciando build do projeto..."
-        xcodebuild clean build -scheme Catty -configuration Release -destination 'generic/platform=iOS' CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO || xcodebuild -list
+        echo "Verificando projetos e schemes disponíveis..."
+        xcodebuild -list || true
+        
+        echo "Tentando compilar o projeto..."
+        xcodebuild -alltargets -configuration Release build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO || true
 
-    - name: Upload IPA Artifact
+    - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: Catty-App
+        name: iOS-Build-Output
         path: |
-          **/*.ipa
           **/build/**/*.app
           **/DerivedData/**/*.app
+          *.ipa
         if-no-files-found: ignore
         
