@@ -18,21 +18,34 @@ jobs:
       with:
         xcode-version: latest
 
-    - name: List Schemes and Build
+    - name: Build Project
       run: |
-        echo "Verificando projetos e schemes disponíveis..."
-        xcodebuild -list || true
+        echo "Procurando arquivos de projeto..."
+        ls -la
         
-        echo "Tentando compilar o projeto..."
-        xcodebuild -alltargets -configuration Release build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO || true
+        # Tenta compilar o workspace ou projeto encontrado
+        if ls *.xcworkspace 1> /dev/null 2>&1; then
+          WORKSPACE=$(ls -d *.xcworkspace)
+          SCHEME=$(xcodebuild -workspace "$WORKSPACE" -list | grep -m 1 -v "^Information about" | tr -d '[:space:]')
+          echo "Compilando workspace: $WORKSPACE com scheme: $SCHEME"
+          xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -configuration Release -destination 'generic/platform=iOS' build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO || true
+        elif ls *.xcodeproj 1> /dev/null 2>&1; then
+          PROJECT=$(ls -d *.xcodeproj)
+          SCHEME=$(xcodebuild -project "$PROJECT" -list | grep -m 1 -v "^Information about" | tr -d '[:space:]')
+          echo "Compilando projeto: $PROJECT com scheme: $SCHEME"
+          xcodebuild -project "$PROJECT" -scheme "$SCHEME" -configuration Release -destination 'generic/platform=iOS' build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO || true
+        fi
+
+    - name: Archive and Prepare Artifact
+      run: |
+        mkdir -p payload
+        find . -name "*.app" -maxdepth 4 -exec cp -R {} payload/ \;
+        ls -la payload
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: iOS-Build-Output
-        path: |
-          **/build/**/*.app
-          **/DerivedData/**/*.app
-          *.ipa
+        name: Catty-iOS-App
+        path: payload/
         if-no-files-found: ignore
         
