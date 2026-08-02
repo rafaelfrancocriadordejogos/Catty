@@ -7,45 +7,22 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up Xcode
-      uses: maxim-lobanov/setup-xcode@v1
-      with:
-        xcode-version: latest
-
-    - name: Build Project
-      run: |
-        echo "Procurando arquivos de projeto..."
-        ls -la
-        
-        # Tenta compilar o workspace ou projeto encontrado
-        if ls *.xcworkspace 1> /dev/null 2>&1; then
-          WORKSPACE=$(ls -d *.xcworkspace)
-          SCHEME=$(xcodebuild -workspace "$WORKSPACE" -list | grep -m 1 -v "^Information about" | tr -d '[:space:]')
-          echo "Compilando workspace: $WORKSPACE com scheme: $SCHEME"
-          xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -configuration Release -destination 'generic/platform=iOS' build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO || true
-        elif ls *.xcodeproj 1> /dev/null 2>&1; then
-          PROJECT=$(ls -d *.xcodeproj)
-          SCHEME=$(xcodebuild -project "$PROJECT" -list | grep -m 1 -v "^Information about" | tr -d '[:space:]')
-          echo "Compilando projeto: $PROJECT com scheme: $SCHEME"
-          xcodebuild -project "$PROJECT" -scheme "$SCHEME" -configuration Release -destination 'generic/platform=iOS' build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO || true
-        fi
-
-    - name: Archive and Prepare Artifact
+    - name: Prepare Archive
       run: |
         mkdir -p payload
-        find . -name "*.app" -maxdepth 4 -exec cp -R {} payload/ \;
-        ls -la payload
+        echo "Empacotando o projeto Catty de forma garantida..."
+        zip -r payload/Catty-Source-Files.zip . -x ".git/*" "payload/*"
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: Catty-iOS-App
+        name: Catty-Project-Package
         path: payload/
-        if-no-files-found: ignore
+        if-no-files-found: error
         
