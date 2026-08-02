@@ -1,36 +1,11 @@
-name: Build iOS App
-
-on:
-  push:
-    branches: [ develop, main, master ]
-  workflow_dispatch:
-
-jobs:
-  build:
-    runs-on: macos-latest
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Set up Xcode
-      uses: maxim-lobanov/setup-xcode@v1
-      with:
-        xcode-version: latest
-
     - name: Build Project
       run: |
-        echo "Preparando para compilar..."
-        # Se o seu projeto for Catrobat/Catty, coloque aqui os comandos de build do Xcode
-        # Exemplo básico: xcodebuild -list
+        echo "Buscando o projeto..."
+        xcodebuild -list
         
-    - name: Upload IPA Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-ipa
-        path: |
-          *.ipa
-          **/build/**/*.ipa
-          **/DerivedData/**/*.ipa
-        if-no-files-found: ignore
+        echo "Compilando o aplicativo..."
+        xcodebuild -workspace *.xcworkspace -scheme Catty -sdk iphoneos -configuration Release archive -archivePath $PWD/build/Catty.xcarchive
+        
+        echo "Exportando o IPA..."
+        xcodebuild -exportArchive -archivePath $PWD/build/Catty.xcarchive -exportOptionsPlist ExportOptions.plist -exportPath $PWD/build/
         
